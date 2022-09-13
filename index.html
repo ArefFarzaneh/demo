@@ -20,10 +20,6 @@
         - matplotlib
         - seaborn
         - pandas
-        - google-api-python-client
-        - google-auth-httplib2
-        - google-auth-oauthlib
-        - ssl
         - paths:
             - ./df.csv
 
@@ -78,7 +74,7 @@ a = pd.DataFrame(df.personal.value_counts().sort_values(ascending=False))
 a.columns=['Top 10']
 csv.write(a.head(10))
 
-fig=plt.figure(figsize=(10,8))
+fig=plt.figure(figsize=(7,7))
 ax=sns.countplot(data = df,x = df.field,hue=df.team)
 ax.tick_params(axis='x', rotation=60)
 plt.title('team separated',fontsize=20)
