@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <style>
+        div {
+          border: 1px solid black;
+          margin-top: 20px;
+          margin-bottom: 20px;
+          margin-right: 50px;
+          margin-left: 50px;
+          background-color: rgba(231, 126, 126, 0.692);
+        }
+        </style>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,6 +24,9 @@
         - google-auth-httplib2
         - google-auth-oauthlib
         - ssl
+        - paths:
+            - ./df.csv
+
 
 
         
@@ -21,124 +34,139 @@
     <title>Contact Center VOE</title>
 </head>
 <body>
-    <py-script>
+    <p id="csv"></p>
+    <div> Digikala Contact center VOE brief</div>
 
-     
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        sns.set()
-        
-        import json
-        import pandas as pd
-        from google.oauth2.credentials import Credentials
 
-        from googleapiclient.discovery import build
-        
-        
-        from google.oauth2 import service_account
-        def get_sheet(id):
-            SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-            SERVICE_ACCOUNT_FILE = 'keys.json'
-        
-            creds = None
-            creds = service_account.Credentials.from_service_account_file(
-                    SERVICE_ACCOUNT_FILE,scopes=SCOPES)
-        
-            # If modifying these scopes, delete the file token.json.
-            SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-        
-            # The ID and range of a sample spreadsheet.
-            SAMPLE_SPREADSHEET_ID = id
-        
-        
-        
-        
-        
-        
-        
-            service = build('sheets', 'v4', credentials=creds)
-        
-                    # Call the Sheets API
-            sheet = service.spreadsheets()
-            result = sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID,
-                                                range='A1:M100').execute()
-            values = result.get('values', [])
-            
-            df = pd.DataFrame(values[1:], columns=values[0])
-            return df
-        
-        #get_sheet('1wMi1a_Igifrz4MtM4nsbXA-SAl7Mo9uO85nVpW-rL_Q')
-        
-        def add_date(df):
-            df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-            df['month']=df['Timestamp'].dt.month
-            df['day']=df['Timestamp'].dt.day
-            df['year']=df['Timestamp'].dt.year
-            return df
-        
-        
-        def rename(df):
-            try:
-                df['name'] = df['لطفا نام خود را وارد نمائید'] 
-                df['personal'] = df['لطفا کد پرسنلی خود را ثبت نمائید.'] 
-                df['team'] = df['لطفا واحدی که در آن مشغول به فعالیت می باشید را انتخاب نمائید.']
-                df['description'] = df['لطفا پیشنهاد خود را شرح دهید:']
-                df['field'] = df["پیشنهاد شما در چه حوزه ای می باشد؟"]
-                df['documentation'] = df['در صورت نیاز به بارگزاری مستندات برای شفافیت موضوع خود، میتوانید از این قسمت استفاده نمائید.']
-                df['Timestamp'] = df['Timestamp'].dt.date
-            except : pass
-            #del df['لطفا نام خود را وارد نمائید'], df['لطفا کد پرسنلی خود را ثبت نمائید.'],df['لطفا واحدی که در آن مشغول به فعالیت می باشید را انتخاب نمائید.'],df['لطفا پیشنهاد خود را شرح دهید:'],df["پیشنهاد شما در چه حوزه ای می باشد؟"],df['در صورت نیاز به بارگزاری مستندات برای شفافیت موضوع خود، میتوانید از این قسمت استفاده نمائید.']
-            
-            return df
-        
-        
-        def preprocessing(df):
-        
-            #df['peronal'] = df['peronal'].astype(int)
-            df['name'] = df['name'].astype(str)
-            df['team'] = df['team'].astype(str)
-            df['field'] = df['field'].map({'پیشنهاد بهبود (اصلاح رویه- ایجاد رویه جدید)':'suggestion','تولید محتوا':'content','باگ':'bug'})
-        
-            
-            return df
-        
+    <div id="plot"></div>
+    <py-script output="plot">
+
+import pyodide     
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set()
+
+import json
+import pandas as pd
+from google.oauth2.credentials import Credentials
+<!-- 
+from googleapiclient.discovery import build
+
+       
+from google.oauth2 import service_account
+def get_sheet(id):
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+    SERVICE_ACCOUNT_FILE = "./keys.json"
         
 
-        
-        def main():
-            df = get_sheet('1wMi1a_Igifrz4MtM4nsbXA-SAl7Mo9uO85nVpW-rL_Q')
-            df = add_date(df)
-            df = rename(df)
-            df = preprocessing(df)
-            
-            sns.countplot(data = df,x = df.field)
-            plt.title('field separated',fontsize=20)
-            plt.show()
-            
-            fig=plt.figure(figsize=(10,5))
-            ax=sns.countplot(data = df,x = df.field,hue=df.team)
-            ax.tick_params(axis='x', rotation=60)
-            plt.title('team separated',fontsize=20)
-            plt.show()
-        
-            plt.figure(figsize=(8,5))
-            plt.plot(df.groupby('Timestamp')['personal'].count(),c='green')
-            plt.xlabel('Date')
-            plt.ylabel("# of reported issues")
-            plt.show()
-            df.groupby(["team","field"]).size().unstack().sort_values(by=["team"],ascending=False).plot(kind='bar', stacked=True, figsize=(7,7))
-        
-            print(pd.DataFrame(pd.crosstab(df.personal,df.field)).head(10))
-           
-           
-            
-        
-        
-        if __name__ == '__main__':
-            main()
-            
-            
-        
+    creds = None
+    creds = service_account.Credentials.from_service_account_file(
+            SERVICE_ACCOUNT_FILE,scopes=SCOPES)
+
+    # If modifying these scopes, delete the file token.json.
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+
+    # The ID and range of a sample spreadsheet.
+    SAMPLE_SPREADSHEET_ID = id
+
+
+
+
+
+
+
+    service = build('sheets', 'v4', credentials=creds)
+
+            # Call the Sheets API
+    sheet = service.spreadsheets()
+    result = sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID,
+                                        range='A1:M100').execute()
+    values = result.get('values', [])
+    
+    df = pd.DataFrame(values[1:], columns=values[0])
+    return df -->
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+df = pd.read_csv('./df.csv')
+
+df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+df['month']=df['Timestamp'].dt.month
+df['day']=df['Timestamp'].dt.day
+df['year']=df['Timestamp'].dt.year
+
+try:
+    df['name'] = df['لطفا نام خود را وارد نمائید'] 
+    df['personal'] = df['لطفا کد پرسنلی خود را ثبت نمائید.'] 
+    df['team'] = df['لطفا واحدی که در آن مشغول به فعالیت می باشید را انتخاب نمائید.']
+    df['description'] = df['لطفا پیشنهاد خود را شرح دهید:']
+    df['field'] = df["پیشنهاد شما در چه حوزه ای می باشد؟"]
+    df['documentation'] = df['در صورت نیاز به بارگزاری مستندات برای شفافیت موضوع خود، میتوانید از این قسمت استفاده نمائید.']
+    df['Timestamp'] = df['Timestamp'].dt.date
+except : pass
+
+df['name'] = df['name'].astype(str)
+df['team'] = df['team'].astype(str)
+df['field'] = df['field'].map({'پیشنهاد بهبود (اصلاح رویه- ایجاد رویه جدید)':'suggestion','تولید محتوا':'content','باگ':'bug'})
+
+
+<!-- 
+
+
+fig,ax =plt.subplots()
+ax.plot(df.Timestamp,df.field)
+ax.grid()
+fig
+ -->
+
+csv=Element('csv')
+a = pd.DataFrame(df.personal.value_counts().sort_values(ascending=False))
+a.columns=['Top 10']
+csv.write(a.head(10))
+
+fig=plt.figure(figsize=(10,8))
+ax=sns.countplot(data = df,x = df.field,hue=df.team)
+ax.tick_params(axis='x', rotation=60)
+plt.title('team separated',fontsize=20)
+
+
+
+fig
+
+<!-- 
+plt.figure(figsize=(8,5))
+plt.plot(df.groupby('Timestamp')['personal'].count(),c='green')
+plt.xlabel('Date')
+plt.ylabel("# of reported issues")
+plt.show()
+print(df.groupby(["team","field"]).size().unstack().sort_values(by=["team"],ascending=False).plot(kind='bar', stacked=True, figsize=(7,7))) -->
+
+
+    
+    
+    
+
+
+
+
 
 
     </py-script>
